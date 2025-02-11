@@ -1,6 +1,5 @@
 package dev.toaster.thanos.loadbalancers;
 
-import dev.toaster.thanos.requests.Request;
 import dev.toaster.thanos.servers.Server;
 
 import java.util.HashMap;
@@ -27,28 +26,20 @@ public class LoadBalancer {
         this(new HashMap<>(), new RoundRobinStrategy());
     }
 
-    public void registerServer(Server server) {
-        if (this.servers.containsKey(server.toString())) {
-            System.out.println("Server is already registered");
-            return;
-        }
-        this.servers.put(server.toString(), server);
-    }
-
-    public void registerServer(String id, Server server) {
+    public boolean registerServer(String id, Server server) {
         if (this.servers.containsKey(id)) {
             System.out.println("Server is already registered");
-            return;
+            return false;
         }
         this.servers.put(server.toString(), server);
+        return true;
     }
 
     private Server selectServer() {
         return this.loadBalancingStrategy.selectServer(this.servers.values().stream().toList());
     }
 
-    public void forwardRequest(Request request) {
-        Server server = this.selectServer();
-
+    public Map<String, Server> getServers() {
+        return this.servers;
     }
 }
