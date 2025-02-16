@@ -9,6 +9,7 @@ public class Server {
     private final int port;
     private final URL url;
     private Instant lastHealthCheck;
+    private int activeConnections = 0;
 
     public Server(String id, URL url) {
         this.id = id;
@@ -39,6 +40,18 @@ public class Server {
 
     public Instant getLastHealthCheck() {
         return lastHealthCheck;
+    }
+
+    public int getActiveConnections() {
+        return activeConnections;
+    }
+
+    public void incrementConnections() {
+        this.activeConnections++;
+    }
+
+    public void decrementConnections() {
+        this.activeConnections--;
     }
 
     @Override
