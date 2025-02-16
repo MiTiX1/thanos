@@ -37,7 +37,7 @@ public class LoadBalancerService {
         if (targetUrl == null) {
             return ResponseEntity.status(500).body("Could not find target URL");
         }
-        System.out.println(targetUrl);
+
         HttpMethod method = HttpMethod.valueOf(request.getMethod());
         HttpHeaders headers = this.extractHeaders(request);
         String body = this.extractBody(request);
