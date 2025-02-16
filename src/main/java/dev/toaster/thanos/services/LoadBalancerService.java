@@ -1,7 +1,10 @@
 package dev.toaster.thanos.services;
 
+import dev.toaster.thanos.config.ConfigLoader;
+import dev.toaster.thanos.config.ConfigProperties;
 import dev.toaster.thanos.dtos.DeregisterServerDTO;
 import dev.toaster.thanos.dtos.RegisterServerDTO;
+import dev.toaster.thanos.loadbalancers.LeastConnectionsStrategy;
 import dev.toaster.thanos.loadbalancers.LoadBalancingStrategy;
 import dev.toaster.thanos.loadbalancers.RoundRobinStrategy;
 import dev.toaster.thanos.servers.Server;
@@ -24,7 +27,25 @@ import java.util.stream.Collectors;
 public class LoadBalancerService {
     private final ConcurrentHashMap<String, Server> registeredServers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Server> healthyServers = new ConcurrentHashMap<>();
-    private final LoadBalancingStrategy loadBalancingStrategy = new RoundRobinStrategy();
+    private final LoadBalancingStrategy loadBalancingStrategy;
+
+    public LoadBalancerService() {
+        ConfigProperties configProperties = ConfigLoader.loadConfig();
+        configProperties.getServers().forEach(serverConfig -> {
+            RegisterServerDTO registerServerDTO = new RegisterServerDTO(serverConfig.getId(), serverConfig.getUrl());
+            this.registerServer(registerServerDTO);
+        });
+        switch (configProperties.getLoadBalancing().getStrategy()) {
+            case "RoundRobin":
+                this.loadBalancingStrategy = new RoundRobinStrategy();
+                break;
+            case "LeastConnections":
+                this.loadBalancingStrategy = new LeastConnectionsStrategy();
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid load balancing strategy");
+        }
+    }
 
     private Server selectNextServer() {
         return this.healthyServers.isEmpty() ?
@@ -37,7 +58,7 @@ public class LoadBalancerService {
         if (targetUrl == null) {
             return ResponseEntity.status(500).body("Could not find target URL");
         }
-        System.out.println(targetUrl);
+
         HttpMethod method = HttpMethod.valueOf(request.getMethod());
         HttpHeaders headers = this.extractHeaders(request);
         String body = this.extractBody(request);
